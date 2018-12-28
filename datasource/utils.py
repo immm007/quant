@@ -57,25 +57,24 @@ class WYRCSVHelper:
 
 
 class Float:
-    def __new__(cls,*args,**kwargs):
-        if args[0]=='None':
+    def __new__(cls, *args, **kwargs):
+        if 'None' == args[0]:
             return np.nan
         else:
-            return np.float(*args,**kwargs)
+            return np.float(*args, **kwargs)
 
 
 class NoneZeroFloat:
-    def __new__(cls,*args,**kwargs):
-        if args[0]=='0.0' or args[0]=='None':
+    def __new__(cls, *args, **kwargs):
+        if args[0] == '0.0' or args[0] == 'None':
             return np.nan
         else:
-            return np.float(*args,**kwargs)
+            return np.float(*args, **kwargs)
         
         
 class NoneZeroInt:
-    def __new__(cls,*args,**kwargs):
-        if args[0]=='0':
+    def __new__(cls, *args, **kwargs):
+        if args[0] == '0':
             return np.nan
         else:
-            return int(*args,**kwargs)
-        
+            return int(*args, **kwargs)
