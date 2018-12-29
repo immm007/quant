@@ -223,14 +223,14 @@ class Wangyi:
 #       注意如果缺的数据有除权那么市值和流通市值是不准的
         shares1 = r['总市值'] / r['收盘价']
         shares2 = r['流通市值'] / r['收盘价']
-        datas = await cls.apeek(code[1:], r.name)
+        datas = await cls.apeek(code[1:], r.name.date().strftime('%Y-%m-%d'))
         for data in reversed(datas):
             row = {'股票代码': code, '名称': r['名称'], '收盘价': np.float(data[4]),
                    '最高价': np.float(data[2]), '开盘价': np.float(data[1]), '最低价': np.float(data[3]), '涨跌额': np.float(data[5]),
                    '涨跌幅': np.float(data[6]), '成交量': int(data[7])*100, '成交金额': np.float(data[8])*10000, '换手率': np.float(data[10]),
                    '前收盘': r['收盘价'], '总市值': shares1*np.float(data[4]), '流通市值': shares2*np.float(data[4])}
-            _date = datetime.strptime(data[0], '%Y-%m-%d')
-            df.loc[data[0]] = row
+            _date = pd.Timestamp.strptime(data[0], '%Y-%m-%d')
+            df.loc[_date] = row
 
     @classmethod
     async def apeek_complement_all(cls, dfs):
@@ -257,27 +257,6 @@ class Wangyi:
                                 '总市值': utils.NoneZeroFloat,
                                 '流通市值': utils.NoneZeroFloat
                                 }) for name in os.listdir(cls.__stocks_folder))
-
-    def readStock(self,code):
-        names = [name for name in os.listdir(self.__stocks_folder)]
-        for name in names:
-            if code in name:
-                return pd.read_csv(self.__stocks_folder+name,encoding='gbk',index_col=0,
-                        converters={
-                                '日期':lambda s_date:datetime.strptime(s_date,'%Y-%m-%d'),
-                                '收盘价':utils.NoneZeroFloat,
-                                '最高价':utils.NoneZeroFloat,
-                                '最低价':utils.NoneZeroFloat,
-                                '开盘价':utils.NoneZeroFloat,
-                                '前收盘':utils.NoneZeroFloat,
-                                '涨跌额':utils.Float,
-                                '涨跌幅':utils.Float,
-                                '换手率':utils.NoneZeroFloat,
-                                '成交量':utils.NoneZeroInt,
-                                '成交金额':utils.NoneZeroFloat,
-                                '总市值':utils.NoneZeroFloat,
-                                '流通市值':utils.NoneZeroFloat
-                                })
 
     @classmethod
     def read_stock(cls, code):
