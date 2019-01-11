@@ -96,6 +96,35 @@ def get_all_codes():
 class Wangyi:
     __open_date = '19901219'
     __stocks_folder = 'E:/quant/data/wangyi/stocks/'
+    __indexes_folder = 'E:/quant/data/wangyi/indexes/'
+    __indexes = ['0000001', '1399001', '1399005', '1399006']
+    __stock_converter = {
+        '日期': lambda s_date: datetime.strptime(s_date, '%Y-%m-%d'),
+        '收盘价': utils.NoneZeroFloat,
+        '最高价': utils.NoneZeroFloat,
+        '最低价': utils.NoneZeroFloat,
+        '开盘价': utils.NoneZeroFloat,
+        '前收盘': utils.NoneZeroFloat,
+        '涨跌额': utils.Float,
+        '涨跌幅': utils.Float,
+        '换手率': utils.NoneZeroFloat,
+        '成交量': utils.NoneZeroInt,
+        '成交金额': utils.NoneZeroFloat,
+        '总市值': utils.NoneZeroFloat,
+        '流通市值': utils.NoneZeroFloat
+    }
+    __index_converter = {
+            '日期': lambda s_date: datetime.strptime(s_date, '%Y-%m-%d'),
+            '收盘价': utils.NoneZeroFloat,
+            '最高价': utils.NoneZeroFloat,
+            '最低价': utils.NoneZeroFloat,
+            '开盘价': utils.NoneZeroFloat,
+            '前收盘': utils.NoneZeroFloat,
+            '涨跌额': utils.Float,
+            '涨跌幅': utils.Float,
+            '成交量': utils.NoneZeroInt,
+            '成交金额': utils.NoneZeroFloat
+        }
 
     @classmethod
     def make_stock_url(cls, code, end_date, start_date):
@@ -105,6 +134,12 @@ class Wangyi:
                 utils.add_wangyi_prefix(code),
                 start_date,
                 end_date)
+        return url
+
+    @classmethod
+    def make_index_url(cls, code, end_date, start_date):
+        url = "http://quotes.money.163.com/service/chddata.html? code=%s&start=%s&end=%s&" \
+              "fields=TCLOSE;HIGH;LOW;TOPEN;LCLOSE;CHG;PCHG;VOTURNOVER;VATURNOVER" % (code, start_date, end_date)
         return url
 
     @classmethod
@@ -120,6 +155,13 @@ class Wangyi:
     @classmethod
     def get_stock_day_data(cls, code, end_date, start_date=__open_date):
         url = cls.make_stock_url(code, end_date, start_date)
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        return response.text
+
+    @classmethod
+    def get_index_day_data(cls, code, end_date, start_date=__open_date):
+        url = cls.make_index_url(code, end_date, start_date)
         response = requests.get(url, timeout=5)
         response.raise_for_status()
         return response.text
@@ -242,21 +284,8 @@ class Wangyi:
 
     @classmethod
     def read_all_stocks(cls):
-        return (pd.read_csv(cls.__stocks_folder + name, encoding='gbk', index_col=0, converters={
-                                '日期': lambda s_date: datetime.strptime(s_date, '%Y-%m-%d'),
-                                '收盘价': utils.NoneZeroFloat,
-                                '最高价': utils.NoneZeroFloat,
-                                '最低价': utils.NoneZeroFloat,
-                                '开盘价': utils.NoneZeroFloat,
-                                '前收盘': utils.NoneZeroFloat,
-                                '涨跌额': utils.Float,
-                                '涨跌幅': utils.Float,
-                                '换手率': utils.NoneZeroFloat,
-                                '成交量': utils.NoneZeroInt,
-                                '成交金额': utils.NoneZeroFloat,
-                                '总市值': utils.NoneZeroFloat,
-                                '流通市值': utils.NoneZeroFloat
-                                }) for name in os.listdir(cls.__stocks_folder))
+        return (pd.read_csv(cls.__stocks_folder + name, encoding='gbk', index_col=0, converters=cls.__stock_converter)
+                for name in os.listdir(cls.__stocks_folder))
 
     @classmethod
     def read_stock(cls, code):
@@ -264,18 +293,32 @@ class Wangyi:
         for name in names:
             if code in name:
                 return pd.read_csv(cls.__stocks_folder+name, encoding='gbk', index_col=0,
-                                   converters={
-                                    '日期': lambda s_date: datetime.strptime(s_date, '%Y-%m-%d'),
-                                    '收盘价': utils.NoneZeroFloat,
-                                    '最高价': utils.NoneZeroFloat,
-                                    '最低价': utils.NoneZeroFloat,
-                                    '开盘价': utils.NoneZeroFloat,
-                                    '前收盘': utils.NoneZeroFloat,
-                                    '涨跌额': utils.Float,
-                                    '涨跌幅': utils.Float,
-                                    '换手率': utils.NoneZeroFloat,
-                                    '成交量': utils.NoneZeroInt,
-                                    '成交金额': utils.NoneZeroFloat,
-                                    '总市值': utils.NoneZeroFloat,
-                                    '流通市值': utils.NoneZeroFloat
-                                    })
+                                   converters=cls.__stock_converter)
+
+    @classmethod
+    def read_index(cls, code):
+        return pd.read_csv(cls.__indexes_folder+code+'.csv', encoding='gbk', index_col=0,
+                           converters=cls.__index_converter)
+
+    @classmethod
+    def read_one_column(cls, col_name='收盘价'):
+        ret = []
+        for name in os.listdir(cls.__stocks_folder):
+            df = pd.read_csv(cls.__stocks_folder+name, encoding='gbk', index_col=0, converters=cls.__stock_converter)
+            series = df[col_name]
+            series.name = name[11:17]
+            ret.append(series)
+        return pd.DataFrame(ret).T
+
+    @classmethod
+    def download_indexes(cls):
+        dt = datetime.now()
+        _date = dt.date()
+        if dt < datetime(_date.year, _date.month, _date.day, 15, 30, 0):
+            _date -= timedelta(1)
+        for index in cls.__indexes:
+            content = cls.get_index_day_data(index, _date.strftime('%Y%m%d'))
+            with open(cls.__indexes_folder + '%s.csv' % index[1:], 'w', newline='') as f:
+                f.write(content[0:48])
+                helper = utils.WYRCSVHelper(content, 48)
+                f.writelines(helper)

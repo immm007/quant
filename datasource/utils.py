@@ -1,4 +1,7 @@
 import numpy as np
+import pandas as pd
+import decimal
+from decimal import Decimal
 
 
 def add_prefix(code, sh, sz):
@@ -78,3 +81,16 @@ class NoneZeroInt:
             return np.nan
         else:
             return int(*args, **kwargs)
+
+def ztj(p):
+    context = decimal.getcontext()
+    context.prec = 6
+    context.rounding = decimal.ROUND_HALF_UP
+    dc = Decimal(p)
+    d = dc*Decimal(0.1)
+    ret = dc+d
+    return float(ret.quantize(Decimal('0.00',context)))
+    
+    
+    
+        
