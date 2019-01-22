@@ -9,15 +9,15 @@ def add_prefix(code, sh, sz):
         return sh + code
     elif code[0] == '0' or code[0] == '3':
         return sz + code
-    raise RuntimeError('unsupoorted code %s' % code)
+    raise RuntimeError('invalid code %s' % code)
 
 
 def add_sina_prefix(code):
-    return add_prefix(code,'sh','sz')
+    return add_prefix(code, 'sh', 'sz')
 
 
 def add_wangyi_prefix(code):
-    return add_prefix(code,'0','1')
+    return add_prefix(code, '0', '1')
 
 
 class CSVHelper:
@@ -90,7 +90,3 @@ def ztj(p):
     d = dc*Decimal(0.1)
     ret = dc+d
     return float(ret.quantize(Decimal('0.00',context)))
-    
-    
-    
-        

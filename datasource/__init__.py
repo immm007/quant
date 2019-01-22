@@ -8,6 +8,7 @@ from datetime import timedelta, datetime
 from bs4 import BeautifulSoup
 import numpy as np
 import pandas as pd
+import json
 
 
 class SHExchange:
@@ -48,8 +49,20 @@ class SHExchange:
     def get_all_codes(cls):
         for g in cls.get_trading_codes(), cls.get_delisted_codes(), cls.get_halted_codes():
             yield from g
-
-
+    
+    @classmethod
+    def get_kzh_bonds(cls):
+        _headers = {'Referer': 'http://www.sse.com.cn/assortment/bonds/list/'}
+        url = 'http://query.sse.com.cn/commonQuery.do?jsonCallBack=jsonpCallback99006&isPagination=true&sqlId=COMMON_BOND_KZZFLZ_ALL&pageHelp.pageSize=1000&pageHelp.cacheSize=1&pageHelp.pageNo=1&pageHelp.beginPage=1&pagecache=false&BONDCODE=&KZZ=1&_=1548125040324'
+        response = requests.get(url, headers=_headers)
+        response.raise_for_status()
+        r = json.loads(response.text[19:-1])['result']
+        now = datetime.now()
+        today = now.date()
+        stoday = today.strftime('%Y-%m-%d')
+        return [d['BOND_CODE'] for d in r if d['END_DATE']>stoday]
+ 
+    
 class SZExchange:
     __base_url = 'http://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=%s&TABKEY=tab%d'
     
@@ -322,3 +335,139 @@ class Wangyi:
                 f.write(content[0:48])
                 helper = utils.WYRCSVHelper(content, 48)
                 f.writelines(helper)
+
+
+class Sina:
+    __session = requests.session()
+    __url = None
+    
+    class Quote:
+        def __init__(self, s):
+            t = s.split(',')
+            self.__code = t[0][13:19]
+            self.__price = t[3]
+            
+            self.__bid1 = t[11]
+            self.__bid1_vol = t[10]
+            self.__bid2 = t[13]
+            self.__bid2_vol = t[12]
+            self.__bid3 = t[15]
+            self.__bid3_vol = t[14]
+            self.__bid4 = t[17]
+            self.__bid4_vol = t[16]
+            self.__bid5 = t[19]
+            self.__bid5_vol = t[18]
+            
+            self.__ask1 = t[21]
+            self.__ask1_vol = t[20]
+            self.__ask2 = t[23]
+            self.__ask2_vol = t[22]
+            self.__ask3 = t[25]
+            self.__ask3_vol = t[24]
+            self.__ask4 = t[27]
+            self.__ask4_vol = t[26]
+            self.__ask5 = t[29]
+            self.__ask5_vol = t[28]
+            
+        @property
+        def code(self):
+            return self.__code
+        
+        @property
+        def price(self):
+            return self.__price
+        
+        @property
+        def bid1(self):
+            return self.__bid1
+        
+        @property
+        def bid2(self):
+            return self.__bid2    
+        @property
+        def bid3(self):
+            return self.__bid3
+        
+        @property
+        def bid4(self):
+            return self.__bid4
+        @property
+        def bid5(self):
+            return self.__bid5
+        
+        @property
+        def ask1(self):
+            return self.__ask1
+        
+        @property
+        def ask2(self):
+            return self.__ask2  
+
+        @property
+        def ask3(self):
+            return self.__ask3
+        
+        @property
+        def ask4(self):
+            return self.__ask4 
+        
+        @property
+        def ask5(self):
+            return self.__ask5
+        
+        @property
+        def bid1_vol(self):
+            return self.__bid1_vol
+        
+        @property
+        def bid2_vol(self):
+            return self.__bid2_vol
+        
+        @property
+        def bid3_vol(self):
+            return self.__bid3_vol
+        
+        @property
+        def bid4_vol(self):
+            return self.__bid4_vol
+        
+        @property
+        def bid5_vol(self):
+            return self.__bid5_vol
+        
+        @property
+        def ask1_vol(self):
+            return self.__ask1_vol
+        
+        @property
+        def ask2_vol(self):
+            return self.__ask2_vol
+        
+        @property
+        def ask3_vol(self):
+            return self.__ask3_vol
+        
+        @property
+        def ask4_vol(self):
+            return self.__ask4_vol
+        
+        @property
+        def ask5_vol(self):
+            return self.__ask5_vol
+        
+        
+    @classmethod
+    def subscribe(cls, iterateable):
+        cls.__url = 'http://hq.sinajs.cn/list='+','.join(iterateable)
+    
+    @classmethod
+    def get_rt_quote(cls):
+        response = cls.__session.get(cls.__url)
+        response.raise_for_status()
+        lines = response.text.splitlines()
+        ret = []
+        for line in lines:
+            if len(line) > 100:
+                ret.append(cls.Quote(line))
+        return ret
+        
