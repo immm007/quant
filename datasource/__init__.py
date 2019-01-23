@@ -338,7 +338,7 @@ class Wangyi:
 
 
 class Sina:
-    __session = requests.session()
+    __session = None
     __url = None
     
     class Quote:
@@ -462,6 +462,8 @@ class Sina:
     
     @classmethod
     def get_rt_quote(cls):
+        if cls.__session is None:
+            cls.__session = requests.Session()
         response = cls.__session.get(cls.__url)
         response.raise_for_status()
         lines = response.text.splitlines()
@@ -470,4 +472,39 @@ class Sina:
             if len(line) > 100:
                 ret.append(cls.Quote(line))
         return ret
+    
+    @classmethod
+    def get_relative_code(cls,bond_code):
+        url = 'http://money.finance.sina.com.cn/bond/quotes/{0}.html'.format(bond_code)
+        for i in range(3):
+            response = requests.get(url,timeout=3)
+            if response.status_code==200:
+                break;
+        response.raise_for_status()
+        response.encoding = 'gbk'
+        t = response.text
+        pos = t.find('relatedStock')
+        return t[pos+16:pos+24]
+    
+    @classmethod
+    async def aget_relative_code(cls, bcode):
+        url = 'http://money.finance.sina.com.cn/bond/quotes/{0}.html'.format(bcode)
+        async with cls.__session.get(url) as response:
+             t = await response.text(encoding='gbk')
+             pos = t.find('relatedStock')
+             return t[pos+16:pos+24]
+    
+    @classmethod
+    async def aget_relative_codes(cls, bcodes):
+        async with aiohttp.ClientSession() as client:
+            cls.__session = client
+            ret = await asyncio.gather(*tuple(Sina.aget_relative_code(code) for code in bcodes))
+        del cls.__session
+        return ret
+            
+    
+    
+        
+        
+            
         
