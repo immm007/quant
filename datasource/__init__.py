@@ -99,8 +99,23 @@ class SZExchange:
     def get_all_codes(cls):
         for g in cls.get_trading_codes(), cls.get_delisted_codes(), cls.get_halted_codes():
             yield from g
-
-
+    
+    @classmethod
+    def get_kzh_bonds(cls, col=0):
+        _date = datetime.now() - timedelta(1)
+        s_date = _date.strftime('%Y-%m-%d')
+        url = 'http://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1277&TABKEY=tab1&txtDate={0}&random=0.4172910574990263'.format(s_date)
+        res = requests.get(url)
+        res.raise_for_status()
+        with open('tmp.xlsx', 'wb') as f:
+            f.write(res.content)
+        wb = xlrd.open_workbook('tmp.xlsx')
+        sheet = wb.sheet_by_index(0)
+        ret = [sheet.row(i)[col].value for i in range(1, sheet.nrows)]
+        os.remove('tmp.xlsx')
+        return ret
+        
+    
 def get_all_codes():
     for g in SHExchange.get_all_codes(), SZExchange.get_all_codes():
         yield from g
@@ -346,8 +361,6 @@ class Wangyi:
                 helper = utils.WYRCSVHelper(content, 48)
                 f.writelines(helper)
 
-<<<<<<< HEAD
-
 class Sina:
     __session = None
     __url = None
@@ -512,40 +525,3 @@ class Sina:
             ret = await asyncio.gather(*tuple(Sina.aget_relative_code(code) for code in bcodes))
         del cls.__session
         return ret
-            
-    
-    
-        
-        
-            
-        
-=======
-    @classmethod
-    def get_sorted_stocks(cls, page=0, count=100, sort='PERCENT'):
-#       暂时不考虑涨停家数超过100家的情况        
-        url = cls.make_sort_url(page,count,sort)
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.json()
-#        l = r['list']
-#        ret = []
-#        for d in l:
-#            if d['PERCENT'] > 0.4:
-#                continue
-##            只统计自然涨停的非st股
-#            if utils.ztj(d['YESTCLOSE'])==d['PRICE']:
-#                #带前缀的股票代码，内部使用
-#                ret.append(d['CODE'])
-#            else:
-#                return ret
-#        raise RuntimeError('more than 100 ZT')
-    
-    @classmethod
-    def get_fs_today(cls, icode):
-        url = cls.make_fs_url(icode)
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.json()
-            
-    
->>>>>>> 749aca4b79410bc4f2320d92df0e0b74d5b72e8f
