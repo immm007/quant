@@ -154,7 +154,17 @@ class Wangyi:
         url = "http://quotes.money.163.com/service/chddata.html? code=%s&start=%s&end=%s&" \
               "fields=TCLOSE;HIGH;LOW;TOPEN;LCLOSE;CHG;PCHG;VOTURNOVER;VATURNOVER" % (code, start_date, end_date)
         return url
-
+    
+    @classmethod
+    def make_sort_url(cls, page, count, sort):
+        url = 'http://quotes.money.163.com/hs/service/diyrank.php?host=http%3A%2F%2Fquotes.money.163.com%2Fhs%2Fservice%2Fdiyrank.php&page={0}&query=STYPE%3AEQA&fields=NO%2CSYMBOL%2CNAME%2CPRICE%2CPERCENT%2CUPDOWN%2CFIVE_MINUTE%2COPEN%2CYESTCLOSE%2CHIGH%2CLOW%2CVOLUME%2CTURNOVER%2CHS%2CLB%2CWB%2CZF%2CPE%2CMCAP%2CTCAP%2CMFSUM%2CMFRATIO.MFRATIO2%2CMFRATIO.MFRATIO10%2CSNAME%2CCODE%2CANNOUNMT%2CUVSNEWS&sort={2}&order=desc&count={1}&type=query'.format(page,count,sort)
+        return url
+    
+    @classmethod
+    def make_fs_url(cls, icode):
+        url = 'http://img1.money.126.net/data/hs/time/today/{0}.json'.format(icode)
+        return url
+    
     @classmethod
     def make_end_date(cls):
         now = datetime.now()
@@ -327,7 +337,7 @@ class Wangyi:
     def download_indexes(cls):
         dt = datetime.now()
         _date = dt.date()
-        if dt < datetime(_date.year, _date.month, _date.day, 15, 30, 0):
+        if dt < datetime(_date.year, _date.month, _date.day, 18, 30, 0):
             _date -= timedelta(1)
         for index in cls.__indexes:
             content = cls.get_index_day_data(index, _date.strftime('%Y%m%d'))
@@ -336,6 +346,7 @@ class Wangyi:
                 helper = utils.WYRCSVHelper(content, 48)
                 f.writelines(helper)
 
+<<<<<<< HEAD
 
 class Sina:
     __session = None
@@ -508,3 +519,33 @@ class Sina:
         
             
         
+=======
+    @classmethod
+    def get_sorted_stocks(cls, page=0, count=100, sort='PERCENT'):
+#       暂时不考虑涨停家数超过100家的情况        
+        url = cls.make_sort_url(page,count,sort)
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+#        l = r['list']
+#        ret = []
+#        for d in l:
+#            if d['PERCENT'] > 0.4:
+#                continue
+##            只统计自然涨停的非st股
+#            if utils.ztj(d['YESTCLOSE'])==d['PRICE']:
+#                #带前缀的股票代码，内部使用
+#                ret.append(d['CODE'])
+#            else:
+#                return ret
+#        raise RuntimeError('more than 100 ZT')
+    
+    @classmethod
+    def get_fs_today(cls, icode):
+        url = cls.make_fs_url(icode)
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+            
+    
+>>>>>>> 749aca4b79410bc4f2320d92df0e0b74d5b72e8f
