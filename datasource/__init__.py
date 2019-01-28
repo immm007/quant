@@ -368,7 +368,7 @@ class Sina:
     class Quote:
         def __init__(self, s):
             t = s.split(',')
-            self.__code = t[0][13:19]
+            self.__code = t[0][11:19]
             self.__price = t[3]
             
             self.__bid1 = t[11]
@@ -481,8 +481,8 @@ class Sina:
         
         
     @classmethod
-    def subscribe(cls, iterateable):
-        cls.__url = 'http://hq.sinajs.cn/list='+','.join(iterateable)
+    def subscribe(cls, iteraterable):
+        cls.__url = 'http://hq.sinajs.cn/list='+','.join(iteraterable)
     
     @classmethod
     def get_rt_quote(cls):
